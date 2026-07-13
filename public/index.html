@@ -360,7 +360,8 @@ function renderIssues(report) {
 function renderCards(report) {
   const tbody = document.getElementById('cardsBody');
   tbody.innerHTML = '';
-  document.getElementById('cardsSummary').textContent = `Ver lista completa de cartas (${report.cards.length})`;
+  document.getElementById('cardsSummary').textContent =
+    `Ver lista completa de cartas (${report.cards.length} diferentes, ${report.cardCount} no total)`;
   for (const c of report.cards) {
     const tr = document.createElement('tr');
     if (c.isBanned) tr.className = 'banned';

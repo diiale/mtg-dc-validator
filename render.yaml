@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: mtg-dc-validator
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: FETCH_TIMEOUT_MS
+        value: "15000"

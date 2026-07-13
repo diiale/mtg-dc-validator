@@ -71,10 +71,28 @@ function parseBRL(str) {
 // interno mais curto para falhar com mensagem clara antes desse limite.
 const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS, 10) || 20000;
 
+// ligamagic.com.br fica atras de um Cloudflare que exige resolver um desafio
+// de JavaScript ("Just a moment...") quando a requisicao vem de IP de
+// provedor de nuvem/hospedagem (Vercel, Render, AWS, etc. -- confirmado nos
+// dois). Um fetch() simples nunca resolve isso, entao quando SCRAPER_API_KEY
+// estiver configurada, essas requisicoes passam pelo ScraperAPI (que roda um
+// navegador de verdade e resolve o desafio). duelcommander.org nao tem
+// Cloudflare, entao continua indo direto (nao gasta credito do plano).
+const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY || '';
+const SCRAPER_API_URL = 'https://api.scraperapi.com/';
+
+function needsScraperProxy(url) {
+  return SCRAPER_API_KEY && url.includes('ligamagic.com.br');
+}
+
 async function fetchText(url) {
+  const targetUrl = needsScraperProxy(url)
+    ? `${SCRAPER_API_URL}?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(url)}&render=true&country_code=br`
+    : url;
+
   let res;
   try {
-    res = await fetch(url, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    res = await fetch(targetUrl, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   } catch (err) {
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
       throw new Error(`Tempo esgotado ao buscar ${url} (${FETCH_TIMEOUT_MS / 1000}s). O site pode estar fora do ar ou bloqueando a requisicao.`);

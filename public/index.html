@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validador Duel Commander 500</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1f232c;
+    --border: #2a2f3a;
+    --text: #e8eaed;
+    --muted: #9aa2b1;
+    --accent: #c9a45c;
+    --accent-2: #7c5cff;
+    --ok: #3ecf8e;
+    --ok-bg: rgba(62, 207, 142, 0.12);
+    --bad: #ff5d6c;
+    --bad-bg: rgba(255, 93, 108, 0.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --panel-2: #f0f1f4;
+      --border: #dde1e7;
+      --text: #1b1e24;
+      --muted: #5b6270;
+      --ok-bg: rgba(30, 160, 100, 0.10);
+      --bad-bg: rgba(220, 50, 60, 0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+  .wrap { width: 100%; max-width: 760px; }
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .subtitle { color: var(--muted); margin: 0 0 28px; font-size: 0.95rem; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 6px; }
+  input[type=text], input[type=number] {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  input[type=text]:focus, input[type=number]:focus { border-color: var(--accent-2); }
+  .field-deck { flex: 1 1 380px; }
+  .field-limit { flex: 0 1 140px; }
+  button {
+    margin-top: 16px;
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent-2), #5b3fe0);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  button:not(:disabled):hover { filter: brightness(1.08); }
+  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  .hint code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+
+  #status { display: none; color: var(--muted); font-size: 0.9rem; margin-top: 14px; }
+  #status.show { display: block; }
+  #error { display: none; background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); border-radius: 10px; padding: 14px; font-size: 0.9rem; }
+  #error.show { display: block; }
+
+  #result { display: none; }
+  #result.show { display: block; }
+
+  .verdict {
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .verdict.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); }
+  .verdict.bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px; }
+  .stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .stat .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat .value { font-size: 1.15rem; font-weight: 600; margin-top: 4px; }
+  .stat .value.ok { color: var(--ok); }
+  .stat .value.bad { color: var(--bad); }
+
+  .price-bar-track { height: 8px; border-radius: 5px; background: var(--panel-2); overflow: hidden; margin-top: 14px; border: 1px solid var(--border); }
+  .price-bar-fill { height: 100%; border-radius: 5px; }
+  .price-bar-fill.ok { background: var(--ok); }
+  .price-bar-fill.bad { background: var(--bad); }
+
+  h2 { font-size: 1rem; margin: 0 0 10px; }
+  ul.issues { margin: 0; padding-left: 18px; color: var(--bad); font-size: 0.92rem; }
+  ul.issues li { margin-bottom: 4px; }
+  .none-msg { color: var(--ok); font-size: 0.92rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; }
+  tr.banned td { color: var(--bad); font-weight: 600; }
+  tr.commander td { color: var(--accent); font-weight: 600; }
+  td.num { text-align: right; white-space: nowrap; }
+  .section-badge { font-size: 0.7rem; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid var(--muted); border-top-color: var(--accent-2);
+    border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐉 Validador Duel Commander 500</h1>
+  <p class="subtitle">Cola o link do deck no LigaMagic e confere o preço (menor valor disponível) e as cartas banidas do formato.</p>
+
+  <div class="card">
+    <div class="row">
+      <div class="field-deck">
+        <label for="deckInput">Link (ou ID) do deck no LigaMagic</label>
+        <input type="text" id="deckInput" placeholder="https://www.ligamagic.com.br/?view=dks/deck&id=10110575" autocomplete="off">
+      </div>
+      <div class="field-limit">
+        <label for="limitInput">Limite (R$)</label>
+        <input type="number" id="limitInput" value="500" min="0" step="0.01">
+      </div>
+    </div>
+    <button id="validateBtn">Validar deck</button>
+    <div id="status"><span class="spinner"></span><span id="statusText">Buscando dados...</span></div>
+    <div id="error"></div>
+    <p class="hint">Precisa que o servidor local esteja rodando (<code>node server.js</code>). A lista de banidos é buscada ao vivo em <code>duelcommander.org/banlist</code> a cada validação.</p>
+  </div>
+
+  <div id="result" class="card">
+    <div id="verdict" class="verdict"></div>
+
+    <div class="summary-grid">
+      <div class="stat">
+        <div class="label">Comandante</div>
+        <div class="value" id="commanderName">—</div>
+      </div>
+      <div class="stat">
+        <div class="label">Preço total (menor valor)</div>
+        <div class="value" id="totalPrice">—</div>
+      </div>
+    </div>
+    <div class="price-bar-track"><div class="price-bar-fill" id="priceBarFill" style="width:0%"></div></div>
+    <p class="hint" id="priceHint"></p>
+
+    <div style="margin-top: 20px;">
+      <h2>Cartas banidas / restritas</h2>
+      <div id="issuesBox"></div>
+    </div>
+
+    <details style="margin-top: 20px;">
+      <summary id="cardsSummary">Ver lista completa de cartas</summary>
+      <div style="overflow-x:auto; margin-top: 10px;">
+        <table id="cardsTable">
+          <thead><tr><th>Qtd</th><th>Carta</th><th>Nome (EN)</th><th class="num">Preço unit.</th><th class="num">Subtotal</th></tr></thead>
+          <tbody id="cardsBody"></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+const deckInput = document.getElementById('deckInput');
+const limitInput = document.getElementById('limitInput');
+const validateBtn = document.getElementById('validateBtn');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('statusText');
+const errorEl = document.getElementById('error');
+const resultEl = document.getElementById('result');
+
+function brl(n) {
+  return 'R$ ' + n.toFixed(2).replace('.', ',');
+}
+
+function renderIssues(report) {
+  const box = document.getElementById('issuesBox');
+  const allIssues = [...report.commanderIssues, ...report.deckCardIssues];
+  if (allIssues.length === 0) {
+    box.innerHTML = '<p class="none-msg">Nenhuma carta banida ou restrita encontrada. ✅</p>';
+    return;
+  }
+  const ul = document.createElement('ul');
+  ul.className = 'issues';
+  allIssues.forEach((msg) => {
+    const li = document.createElement('li');
+    li.textContent = msg;
+    ul.appendChild(li);
+  });
+  box.innerHTML = '';
+  box.appendChild(ul);
+}
+
+function renderCards(report) {
+  const tbody = document.getElementById('cardsBody');
+  tbody.innerHTML = '';
+  document.getElementById('cardsSummary').textContent = `Ver lista completa de cartas (${report.cards.length})`;
+  for (const c of report.cards) {
+    const tr = document.createElement('tr');
+    if (c.isBanned) tr.className = 'banned';
+    else if (c.isCommander) tr.className = 'commander';
+    tr.innerHTML = `
+      <td>${c.qty}</td>
+      <td>${escapeHtml(c.ptName)}<div class="section-badge">${escapeHtml(c.section.trim())}</div></td>
+      <td>${escapeHtml(c.enName)}</td>
+      <td class="num">${brl(c.unitPrice)}</td>
+      <td class="num">${brl(c.lineTotal)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function renderReport(report) {
+  const verdict = document.getElementById('verdict');
+  const isValid = report.isLegal && report.withinBudget;
+  verdict.className = 'verdict ' + (isValid ? 'ok' : 'bad');
+  verdict.textContent = isValid ? '✅ Deck válido' : '⛔ Deck inválido';
+
+  document.getElementById('commanderName').textContent = report.commander;
+  document.getElementById('totalPrice').textContent = brl(report.total);
+  document.getElementById('totalPrice').className = 'value ' + (report.withinBudget ? 'ok' : 'bad');
+
+  const pct = Math.min(100, (report.total / report.priceLimit) * 100);
+  const fill = document.getElementById('priceBarFill');
+  fill.style.width = pct + '%';
+  fill.className = 'price-bar-fill ' + (report.withinBudget ? 'ok' : 'bad');
+
+  document.getElementById('priceHint').textContent = report.withinBudget
+    ? `Dentro do limite de ${brl(report.priceLimit)} (sobram ${brl(report.priceLimit - report.total)}).`
+    : `Acima do limite de ${brl(report.priceLimit)} (excede em ${brl(report.total - report.priceLimit)}).`;
+
+  renderIssues(report);
+  renderCards(report);
+
+  resultEl.classList.add('show');
+}
+
+async function validate() {
+  const deck = deckInput.value.trim();
+  const limit = parseFloat(limitInput.value) || 500;
+
+  errorEl.classList.remove('show');
+  resultEl.classList.remove('show');
+
+  if (!deck) {
+    errorEl.textContent = 'Cole o link (ou ID) do deck no LigaMagic.';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  validateBtn.disabled = true;
+  statusEl.classList.add('show');
+  statusText.textContent = 'Buscando lista de banidos e o deck...';
+
+  try {
+    const res = await fetch(`/api/validate?deck=${encodeURIComponent(deck)}&limit=${encodeURIComponent(limit)}`);
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `Erro HTTP ${res.status}`);
+    }
+    renderReport(data);
+  } catch (err) {
+    errorEl.textContent = 'Erro: ' + err.message;
+    errorEl.classList.add('show');
+  } finally {
+    validateBtn.disabled = false;
+    statusEl.classList.remove('show');
+  }
+}
+
+validateBtn.addEventListener('click', validate);
+deckInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validate(); });
+</script>
+</body>
+</html>

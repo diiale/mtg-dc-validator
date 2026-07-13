@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/public/index.html" }
+  ],
+  "functions": {
+    "api/validate.js": {
+      "maxDuration": 15
+    }
+  },
+  "env": {
+    "FETCH_TIMEOUT_MS": "7000"
+  }
+}

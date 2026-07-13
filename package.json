@@ -1,0 +1,13 @@
+{
+  "name": "mtg-dc-validator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Validador de decks Duel Commander 500 (LigaMagic) contra a banlist oficial e o limite de preco.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

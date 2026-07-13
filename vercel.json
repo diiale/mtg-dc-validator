@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/", "destination": "/public/index.html" }
   ],
+  "regions": ["gru1"],
   "functions": {
     "api/validate.js": {
       "maxDuration": 15

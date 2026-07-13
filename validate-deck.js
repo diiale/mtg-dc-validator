@@ -18,7 +18,15 @@
 const BANNED_LIST_URL = 'https://www.duelcommander.org/banlist/';
 const DEFAULT_PRICE_LIMIT = 500;
 const REQUIRED_DECK_SIZE = 100; // comandante(s) + 99 (ou 98+2 com parceiro)
-const FETCH_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
+// Cabecalhos parecidos com os de um navegador real -- sites atras de
+// Cloudflare (ligamagic.com.br, duelcommander.org) tem WAFs que bloqueiam
+// requisicoes que parecem vir de bot/datacenter com mais facilidade quando
+// faltam headers comuns de navegador (Accept, Accept-Language, etc).
+const FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+};
 
 // Cartas de Ante/fisicas/subgame da secao "Structurally Banned Cards" de
 // duelcommander.org. A pagina cita so alguns exemplos (ex: "Contract from
@@ -73,7 +81,15 @@ async function fetchText(url) {
     }
     throw new Error(`Falha de rede ao buscar ${url}: ${err.message}`);
   }
-  if (!res.ok) throw new Error(`Falha ao buscar ${url}: HTTP ${res.status}`);
+  if (!res.ok) {
+    const cfRay = res.headers.get('cf-ray');
+    const bodySnippet = (await res.text().catch(() => '')).slice(0, 200).replace(/\s+/g, ' ').trim();
+    throw new Error(
+      `Falha ao buscar ${url}: HTTP ${res.status}` +
+      (cfRay ? ` (cf-ray: ${cfRay})` : '') +
+      (bodySnippet ? ` -- resposta: "${bodySnippet}"` : '')
+    );
+  }
   return res.text();
 }
 

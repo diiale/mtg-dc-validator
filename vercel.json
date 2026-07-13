@@ -5,10 +5,10 @@
   "regions": ["gru1"],
   "functions": {
     "api/validate.js": {
-      "maxDuration": 15
+      "maxDuration": 30
     }
   },
   "env": {
-    "FETCH_TIMEOUT_MS": "7000"
+    "FETCH_TIMEOUT_MS": "25000"
   }
 }

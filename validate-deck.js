@@ -102,8 +102,9 @@ async function fetchText(url) {
   if (!res.ok) {
     const cfRay = res.headers.get('cf-ray');
     const bodySnippet = (await res.text().catch(() => '')).slice(0, 200).replace(/\s+/g, ' ').trim();
+    const viaProxy = needsScraperProxy(url) ? 'via ScraperAPI' : `sem proxy (SCRAPER_API_KEY ${SCRAPER_API_KEY ? 'esta definida mas essa URL nao usa proxy' : 'NAO esta definida'})`;
     throw new Error(
-      `Falha ao buscar ${url}: HTTP ${res.status}` +
+      `Falha ao buscar ${url}: HTTP ${res.status} [${viaProxy}]` +
       (cfRay ? ` (cf-ray: ${cfRay})` : '') +
       (bodySnippet ? ` -- resposta: "${bodySnippet}"` : '')
     );

@@ -17,6 +17,7 @@
 
 const BANNED_LIST_URL = 'https://www.duelcommander.org/banlist/';
 const DEFAULT_PRICE_LIMIT = 500;
+const REQUIRED_DECK_SIZE = 100; // comandante(s) + 99 (ou 98+2 com parceiro)
 const FETCH_HEADERS = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
 
 // Cartas de Ante/fisicas/subgame da secao "Structurally Banned Cards" de
@@ -261,6 +262,17 @@ async function validateDeck(input, priceLimit) {
     }
   }
 
+  const cardCount = deck.allCards.reduce((sum, c) => sum + c.qty, 0);
+  const deckSizeIssues = [];
+  if (cardCount !== REQUIRED_DECK_SIZE) {
+    const diff = REQUIRED_DECK_SIZE - cardCount;
+    deckSizeIssues.push(
+      cardCount < REQUIRED_DECK_SIZE
+        ? `O deck tem ${cardCount} cartas, faltam ${diff} para completar ${REQUIRED_DECK_SIZE} (comandante incluido).`
+        : `O deck tem ${cardCount} cartas, ${-diff} a mais do que o permitido (${REQUIRED_DECK_SIZE}, comandante incluido).`
+    );
+  }
+
   return {
     deckUrl,
     title: deck.title,
@@ -268,9 +280,13 @@ async function validateDeck(input, priceLimit) {
     total,
     priceLimit,
     withinBudget: total <= priceLimit,
+    cardCount,
+    requiredCardCount: REQUIRED_DECK_SIZE,
+    isCardCountValid: cardCount === REQUIRED_DECK_SIZE,
     commanderIssues,
     deckCardIssues,
-    isLegal: commanderIssues.length === 0 && deckCardIssues.length === 0,
+    deckSizeIssues,
+    isLegal: commanderIssues.length === 0 && deckCardIssues.length === 0 && deckSizeIssues.length === 0,
     cards: deck.allCards.map((c) => ({
       section: c.section,
       qty: c.qty,
@@ -295,6 +311,12 @@ function printReport(r) {
   console.log(r.withinBudget
     ? `-> Dentro do orcamento (sobram R$ ${(r.priceLimit - r.total).toFixed(2).replace('.', ',')}).`
     : `-> ACIMA do orcamento (excede em R$ ${(r.total - r.priceLimit).toFixed(2).replace('.', ',')}).`);
+  console.log('');
+
+  console.log(`Quantidade de cartas: ${r.cardCount} / ${r.requiredCardCount}`);
+  if (!r.isCardCountValid) {
+    r.deckSizeIssues.forEach((m) => console.log(`  - ${m}`));
+  }
   console.log('');
 
   if (r.commanderIssues.length === 0) {

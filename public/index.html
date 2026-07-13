@@ -50,7 +50,7 @@
     align-items: center;
     gap: 10px;
   }
-  .subtitle { color: var(--muted); margin: 0 0 28px; font-size: 0.95rem; }
+  .subtitle { color: var(--muted); margin: 0; font-size: 0.95rem; }
   .card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -147,12 +147,14 @@
   /* Fundo decorativo em camadas, trocado de "humor" por cor via filter
      (assim da' pra animar suavemente com transition, sem precisar crossfade
      de imagens). Nao usa nenhuma arte de terceiros -- e' gerado so com
-     gradientes CSS. */
+     gradientes CSS. Por padrao fica invisivel (tema escuro liso, como era
+     antes) -- so aparece quando o usuario escolhe uma cor. */
   .bg-layer {
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    opacity: 0;
     background:
       radial-gradient(circle at 18% 25%, rgba(255,150,40,0.55), transparent 42%),
       radial-gradient(circle at 78% 15%, rgba(255,70,70,0.5), transparent 48%),
@@ -160,11 +162,30 @@
       radial-gradient(circle at 25% 82%, rgba(200,40,40,0.4), transparent 48%),
       radial-gradient(circle at 50% 50%, rgba(120,40,160,0.25), transparent 60%),
       var(--bg);
-    filter: hue-rotate(0deg) saturate(0.01) brightness(1);
-    transition: filter 1.1s ease;
+    filter: hue-rotate(0deg) saturate(1) brightness(1);
+    transition: filter 1.1s ease, opacity 0.6s ease;
+  }
+  .bg-layer.active { opacity: 1; }
+
+  /* Painel atras do titulo/subtitulo/seletor de cor: garante contraste de
+     texto em cima de qualquer cor de fundo escolhida (o texto sozinho direto
+     no body ficava ilegivel em temas mais escuros, tipo o Preto). */
+  .header-panel {
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(8px);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  @media (prefers-color-scheme: light) {
+    .header-panel { background: rgba(255, 255, 255, 0.55); }
+  }
+  .header-panel h1, .header-panel .subtitle { text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+  @media (prefers-color-scheme: light) {
+    .header-panel h1, .header-panel .subtitle { text-shadow: none; }
   }
 
-  .mana-picker { display: flex; gap: 10px; margin-bottom: 22px; }
+  .mana-picker { display: flex; gap: 10px; margin-bottom: 18px; }
   .mana-pip {
     width: 34px; height: 34px; border-radius: 50%;
     border: 1px solid var(--border);
@@ -196,15 +217,17 @@
 <body>
 <div class="bg-layer" id="bgLayer"></div>
 <div class="wrap">
-  <div class="mana-picker" id="manaPicker">
-    <div class="mana-pip" data-color="W" title="Branco">W</div>
-    <div class="mana-pip" data-color="U" title="Azul">U</div>
-    <div class="mana-pip" data-color="B" title="Preto">B</div>
-    <div class="mana-pip" data-color="R" title="Vermelho">R</div>
-    <div class="mana-pip" data-color="G" title="Verde">G</div>
+  <div class="header-panel">
+    <div class="mana-picker" id="manaPicker">
+      <div class="mana-pip" data-color="W" title="Branco">W</div>
+      <div class="mana-pip" data-color="U" title="Azul">U</div>
+      <div class="mana-pip" data-color="B" title="Preto">B</div>
+      <div class="mana-pip" data-color="R" title="Vermelho">R</div>
+      <div class="mana-pip" data-color="G" title="Verde">G</div>
+    </div>
+    <h1>🐉 Validador Duel Commander 500</h1>
+    <p class="subtitle">Cola o link do deck no LigaMagic e confere o preço (menor valor disponível) e as cartas banidas do formato.</p>
   </div>
-  <h1>🐉 Validador Duel Commander 500</h1>
-  <p class="subtitle">Cola o link do deck no LigaMagic e confere o preço (menor valor disponível) e as cartas banidas do formato.</p>
 
   <div class="card">
     <div class="row">
@@ -269,14 +292,26 @@ const MANA_FILTERS = {
   W: 'hue-rotate(25deg) saturate(0.25) brightness(1.5)',
   U: 'hue-rotate(195deg) saturate(1.3) brightness(0.95)',
   B: 'hue-rotate(250deg) saturate(1.1) brightness(0.35)',
-  R: 'hue-rotate(0deg) saturate(1.2) brightness(1)',
+  R: 'hue-rotate(-8deg) saturate(2) brightness(0.8)',
   G: 'hue-rotate(100deg) saturate(1.1) brightness(0.9)',
 };
+let activeColor = null;
 manaPicker.addEventListener('click', (e) => {
   const pip = e.target.closest('.mana-pip');
   if (!pip) return;
   const color = pip.dataset.color;
+
+  // Clicar na cor ja ativa desliga e volta pro tema escuro padrao.
+  if (activeColor === color) {
+    activeColor = null;
+    bgLayer.classList.remove('active');
+    manaPicker.querySelectorAll('.mana-pip').forEach((p) => p.classList.remove('active'));
+    return;
+  }
+
+  activeColor = color;
   bgLayer.style.filter = MANA_FILTERS[color];
+  bgLayer.classList.add('active');
   manaPicker.querySelectorAll('.mana-pip').forEach((p) => p.classList.toggle('active', p === pip));
 });
 </script>

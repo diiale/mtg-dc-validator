@@ -144,11 +144,9 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Fundo decorativo em camadas, trocado de "humor" por cor via filter
-     (assim da' pra animar suavemente com transition, sem precisar crossfade
-     de imagens). Nao usa nenhuma arte de terceiros -- e' gerado so com
-     gradientes CSS. Por padrao fica invisivel (tema escuro liso, como era
-     antes) -- so aparece quando o usuario escolhe uma cor. */
+  /* Fundo decorativo que muda de cor via filter (dá pra animar com transition
+     sem crossfade de imagem). Gerado só com gradiente CSS, sem arte de
+     terceiros. Some por padrão (opacity 0) até o usuário escolher uma cor. */
   .bg-layer {
     position: fixed;
     inset: 0;
@@ -167,9 +165,9 @@
   }
   .bg-layer.active { opacity: 1; }
 
-  /* Painel atras do titulo/subtitulo/seletor de cor: garante contraste de
-     texto em cima de qualquer cor de fundo escolhida (o texto sozinho direto
-     no body ficava ilegivel em temas mais escuros, tipo o Preto). */
+  /* Painel atrás do título/subtítulo/seletor de cor — garante contraste em
+     cima de qualquer cor de fundo (sem isso, o texto direto no body ficava
+     ilegível em temas escuros, tipo o Preto). */
   .header-panel {
     background: rgba(0, 0, 0, 0.28);
     backdrop-filter: blur(8px);
@@ -312,7 +310,7 @@ manaPicker.addEventListener('click', (e) => {
   if (!pip) return;
   const color = pip.dataset.color;
 
-  // Clicar na cor ja ativa desliga e volta pro tema escuro padrao.
+  // Clicar na cor já ativa desliga e volta pro tema escuro padrão.
   if (activeColor === color) {
     activeColor = null;
     bgLayer.classList.remove('active');

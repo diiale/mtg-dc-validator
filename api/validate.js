@@ -1,6 +1,5 @@
-// Funcao serverless da Vercel para GET /api/validate?deck=...&limit=...
-// Mesma logica do server.js local, so que empacotada no formato que a
-// Vercel espera (um arquivo por rota dentro de /api).
+// Função serverless da Vercel para GET /api/validate?deck=...&limit=...
+// Mesma lógica do server.js local, empacotada no formato que a Vercel espera.
 
 const { validateDeck } = require('../validate-deck.js');
 

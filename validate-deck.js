@@ -1,38 +1,26 @@
 #!/usr/bin/env node
-// Validador de decks de Duel Commander 500 (LigaMagic) contra a banlist
-// oficial do Duel Commander (duelcommander.org/banlist/).
-//
-// Nota: existe uma pagina antiga (mtgdc.info) que ficou desatualizada -- ela
-// mesma se declara substituida ("replaced with AeonShift") e nao reflete mais
-// a banlist em vigor. A comunidade brasileira (ligamagic.com.br, mtgdc500.com.br)
-// segue duelcommander.org, entao e' essa a fonte usada aqui.
+// Valida decks de Duel Commander 500 do LigaMagic contra a banlist oficial
+// (duelcommander.org — o mtgdc.info antigo está desatualizado, ver README).
 //
 // Uso:
 //   node validate-deck.js <url-ou-id-do-deck-ligamagic> [--limit=500]
-//
-// Exemplos:
-//   node validate-deck.js "https://www.ligamagic.com.br/?view=dks/deck&id=10110575"
-//   node validate-deck.js 10110575
 //   node validate-deck.js 10110575 --limit=300
 
 const BANNED_LIST_URL = 'https://www.duelcommander.org/banlist/';
 const DEFAULT_PRICE_LIMIT = 500;
 const REQUIRED_DECK_SIZE = 100; // comandante(s) + 99 (ou 98+2 com parceiro)
-// Cabecalhos parecidos com os de um navegador real -- sites atras de
-// Cloudflare (ligamagic.com.br, duelcommander.org) tem WAFs que bloqueiam
-// requisicoes que parecem vir de bot/datacenter com mais facilidade quando
-// faltam headers comuns de navegador (Accept, Accept-Language, etc).
+
+// Cabeçalhos de navegador real — sem eles, sites atrás de Cloudflare
+// bloqueiam a requisição com mais facilidade por parecer bot.
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
   'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
 };
 
-// Cartas de Ante/fisicas/subgame da secao "Structurally Banned Cards" de
-// duelcommander.org. A pagina cita so alguns exemplos (ex: "Contract from
-// Below" + a categoria "All ante cards"); mantemos aqui a lista completa e
-// nominal das 9 cartas historicas com habilidade de Ante (fixas desde sempre,
-// nao mudam com atualizacoes de banlist) mais as cartas fisicas/subgame.
+// Cartas de Ante/físicas/subgame da seção "Structurally Banned Cards" do
+// duelcommander.org. A página só cita exemplos soltos, então mantemos a
+// lista completa aqui — são cartas históricas fixas, não mudam com a banlist.
 const STRUCTURALLY_BANNED_NAMED_CARDS = [
   'Amulet of Quoz', 'Bronze Tablet', 'Contract from Below', 'Darkpact',
   'Demonic Attorney', 'Jeweled Bird', 'Rebirth', 'Tempest Efreet',
@@ -66,18 +54,14 @@ function parseBRL(str) {
   return Number.isFinite(val) ? val : 0;
 }
 
-// Configuravel via env var: em hospedagens serverless (ex: Vercel Hobby) as
-// funcoes tem um limite duro de execucao (10-15s), entao vale um timeout
-// interno mais curto para falhar com mensagem clara antes desse limite.
+// Configurável via env var — hospedagens serverless têm um limite duro de
+// execução, então é melhor falhar com mensagem clara antes desse limite.
 const FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS, 10) || 20000;
 
-// ligamagic.com.br fica atras de um Cloudflare que exige resolver um desafio
-// de JavaScript ("Just a moment...") quando a requisicao vem de IP de
-// provedor de nuvem/hospedagem (Vercel, Render, AWS, etc. -- confirmado nos
-// dois). Um fetch() simples nunca resolve isso, entao quando SCRAPER_API_KEY
-// estiver configurada, essas requisicoes passam pelo ScraperAPI (que roda um
-// navegador de verdade e resolve o desafio). duelcommander.org nao tem
-// Cloudflare, entao continua indo direto (nao gasta credito do plano).
+// ligamagic.com.br fica atrás de um Cloudflare que bloqueia fetch() vindo de
+// IP de nuvem (confirmado na Vercel e no Render — ver README). Com
+// SCRAPER_API_KEY configurada, essas buscas passam pelo ScraperAPI.
+// duelcommander.org não tem esse problema, então continua indo direto.
 const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY || '';
 const SCRAPER_API_URL = 'https://api.scraperapi.com/';
 
@@ -114,10 +98,9 @@ async function fetchText(url) {
 
 // ---------- Lista de banidos (duelcommander.org) ----------
 //
-// A pagina renderiza cada carta como:
-//   <div class="ban-grid" id="banned-commanders" ...> ... </div>
-// com um <div class="ban-item ..." data-card-name="Nome Da Carta"> por carta.
-// Extraimos pelo id do container ate o proximo container/heading.
+// Cada carta aparece como um <div class="ban-item" data-card-name="Nome">
+// dentro de um container <div class="ban-grid" id="...">. Extraímos pelo id
+// do container até o próximo container/heading.
 
 function extractCardNamesFromContainer(html, containerId) {
   const startRe = new RegExp(`<div class="ban-grid" id="${containerId}"[^>]*>`);
@@ -151,9 +134,8 @@ async function fetchBannedLists() {
     throw new Error('Nao foi possivel extrair a banlist de duelcommander.org (0 cartas encontradas). O site pode ter mudado de estrutura.');
   }
 
-  // "offensive-cards" (conteudo ofensivo) tambem sao banidas em qualquer
-  // lugar, igual as de "banned-cards" -- so ficam numa secao separada por
-  // motivo de contexto/aviso, nao por regra diferente.
+  // "offensive-cards" também são banidas em qualquer lugar, igual as de
+  // "banned-cards" — ficam numa seção separada só por contexto/aviso.
   const fullyBannedRaw = [...bannedInDeckRaw, ...offensiveRaw, ...STRUCTURALLY_BANNED_NAMED_CARDS];
 
   return {
@@ -172,8 +154,8 @@ function resolveDeckUrl(input) {
 }
 
 function buildPriceMap(html) {
-  // <img ... id="card_<linkMobile>" price-min='...' ...> aparece em varias
-  // visualizacoes da mesma pagina; usamos a primeira ocorrencia de cada id.
+  // <img id="card_<linkMobile>" price-min='...'> aparece em várias
+  // visualizações da mesma página; usamos só a primeira ocorrência de cada id.
   const priceMap = new Map();
   const re = /id="card_(\d+)"\s+price-min=['"]([^'"]*)['"]/g;
   let m;
@@ -217,7 +199,7 @@ function parseDeck(html) {
     if (!qtyM || !idM || !ptNameM || !hrefM) continue;
 
     const linkId = idM[1];
-    if (seen.has(linkId)) continue; // ja processado em outra visualizacao da pagina
+    if (seen.has(linkId)) continue; // já processado em outra visualização da página
     seen.add(linkId);
 
     const cardParam = hrefM[1].split('card=')[1] || '';
@@ -286,7 +268,7 @@ async function validateDeck(input, priceLimit) {
       if (v.type === 'banido') {
         deckCardIssues.push(`"${card.ptName}" (${card.enName}) esta banido em Duel Commander (${v.matched}).`);
       }
-      // 'restrito-como-comandante' fora do slot de comandante e' legal, nao gera violacao.
+      // "restrito-como-comandante" fora do slot de comandante é legal, não gera violação.
     }
   }
 

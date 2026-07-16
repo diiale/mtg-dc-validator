@@ -1,10 +1,8 @@
 #!/usr/bin/env node
-// Servidor local para a interface web do validador de decks Duel Commander 500.
-// A busca das paginas externas (duelcommander.org / ligamagic.com.br) e' feita
-// aqui, no servidor, porque navegadores bloqueiam esse tipo de requisicao
-// entre dominios diferentes (CORS) quando feita direto do HTML.
+// Servidor local da interface web. Busca duelcommander.org/ligamagic.com.br
+// aqui no servidor porque o navegador bloqueia isso direto do HTML (CORS).
 //
-// Uso: node server.js  (depois abra http://localhost:5173 no navegador)
+// Uso: node server.js  (depois abra http://localhost:5173)
 
 const http = require('http');
 const fs = require('fs');
@@ -68,10 +66,9 @@ async function handleRequest(req, res) {
 }
 
 const server = http.createServer((req, res) => {
-  // Nunca deixa uma excecao (sincrona ou de promise) derrubar o processo:
-  // sem isso, qualquer erro inesperado aqui mataria o servidor inteiro e
-  // TODAS as proximas requisicoes do navegador dariam "Failed to fetch",
-  // mesmo sem relacao com a requisicao que causou o erro original.
+  // Sem isso, um erro inesperado aqui derrubaria o processo inteiro e todo
+  // request seguinte do navegador daria "Failed to fetch" — mesmo sem relação
+  // com o que causou o erro original.
   handleRequest(req, res).catch((err) => {
     console.error('[server] erro nao tratado na requisicao:', err);
     if (!res.headersSent) {
